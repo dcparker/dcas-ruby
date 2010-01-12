@@ -1,31 +1,32 @@
-# Functions of DCAS:
-#  + Generate a file
-#  + Upload a file
-#  + Check for response files
-#  + Receive response files
-#  + Parse response files
+= Functions of DCAS:
 
-# First you must set up the login info and a cache location
-angola = DCAS.new(:username => 'angola', :password => '4ng014', :cache_location => './EFT')
+* Generate a file
+* Upload a file
+* Check for response files
+* Receive response files
+* Parse response files
 
-# You can generate a payments file from a collection of DCAS::Payment objects
-DCAS.generate!(filename, data)
+=== First you must set up the login info and a cache location
+  angola = DCAS.new(:username => 'angola', :password => '4ng014', :cache_location => './EFT')
 
-# Upload any file to the payments folder of a DCAS bucket
-angola.submit_file!(filename)
+=== You can generate a payments file from a collection of DCAS::Payment objects
+  DCAS.generate!(filename, data)
 
-# Check for response file availability and return the available filenames
-response_filenames = angola.available_response_files
+=== Upload any file to the payments folder of a DCAS bucket
+  angola.submit_file!(filename)
+
+=== Check for response file availability and return the available filenames
+  response_filenames = angola.available_response_files
   response_filename = response_filenames.first
 
-# Download all response files
-angola.download_response_files!
+=== Download all response files
+  angola.download_response_files!
   response_file_content = File.read(angola.cache_location + '/' + response_filename)
 
-# Return an array of DCAS::Response objects parsed from the response file/content
-responses = DCAS.parse_response_file(response_filename)
-responses = DCAS.parse_response_file(response_file_content)
+=== Return an array of DCAS::Response objects parsed from the response file/content
+  responses = DCAS.parse_response_file(response_filename)
+  responses = DCAS.parse_response_file(response_file_content)
 
-# Run the block for each DCAS::Response in the response file/content
-DCAS.each_response_in(response_filename) { ... }
-DCAS.each_response_in(response_file_content) { ... }
+=== Run the block for each DCAS::Response in the response file/content
+  DCAS.each_response_in(response_filename) { ... }
+  DCAS.each_response_in(response_file_content) { ... }
