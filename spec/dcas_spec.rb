@@ -2,13 +2,17 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "Dcas - Comprehensive failure frequency test" do
   it "should generate Ach payment files correctly" do
-    ach_payments_file = DCAS.generate!(Fixtures[:TestPayments][:Ach].collect {|p| DCAS::AchPayment.new(p) })
+    ach_batch = Fixtures[:Clients].first.new_batch(123)
+    Fixtures[:TestPayments][:Ach].collect {|p| ach_batch << DCAS::AchPayment.new(*p) }
+    ach_payments_file = ach_batch.to_csv
     ach_payments_file.should eql(File.read('spec/fixtures/ach_payments.csv'))
   end
 
   it "should generate CreditCard payment files correctly" do
-    credit_card_payments_file = DCAS.generate!(Fixtures[:TestPayments][:CreditCard].collect {|p| DCAS::CreditCardPayment.new(p) })
-    credit_card_payments_file.should eql(File.read('spec/fixtures/credit_card_payments.csv'))
+    cc_batch = Fixtures[:Clients].first.new_batch(123)
+    Fixtures[:TestPayments][:CreditCard].collect {|p| cc_batch << DCAS::CreditCardPayment.new(*p) }
+    cc_payments_file = cc_batch.to_csv
+    cc_payments_file.should eql(File.read('spec/fixtures/credit_card_payments.csv'))
   end
 
   it "should be able to complete an entire mock procedure without failing" do

@@ -1,15 +1,10 @@
 module DCAS
+  BUCKET_HOST = 'ftp.ezpaycenters.net'
   OUTGOING_BUCKET = 'outgoing'
   INCOMING_BUCKET = 'incoming'
   STAGING_BUCKET  = 'staging'
 
   class << self
-    # Generates a payment batch file and returns its contents.
-    def generate!(payments_collection)
-      type = payments_collection.first.class
-      raise ArgumentError, "payments_collection given was not a uniform type of payment" unless payments_collection.all? {|p| p.class == type}
-    end
-
     # Parses the responses from a response file and returns an array of DCAS::Response objects.
     def parse_response_file(filename_or_content)
     end
@@ -18,13 +13,20 @@ module DCAS
   class Client
     # Instantiate a new Client object which can do authenticated actions in a DCAS FTPS bucket.
     def initialize(options={})
-      raise ArgumentError, "must include :username, :password, and :cache_location" unless options.has_key?(:username) && options.has_key?(:password) && options.has_key?(:cache_location)
+      raise ArgumentError, "must include :username, :password, :company_alias, :company_username, :company_password, and :cache_location" if [:username, :password, :company_alias, :company_username, :company_password, :cache_location].any? {|k| !options.has_key?(k)}
       @username = options[:username]
       @password = options[:password]
+      @company_alias = options[:company_alias]
+      @company_username = options[:company_username]
+      @company_password = options[:company_password]
       @cache_location = options[:cache_location]
     end
 
-    attr_reader :cache_location
+    attr_reader :company_alias, :company_username, :company_password, :cache_location
+
+    def new_batch(batch_id)
+      DCAS::PaymentBatch.new(self, batch_id)
+    end
 
     # Submits a single file to the DCAS outgoing payments bucket.
     def submit_file!(filename)
@@ -55,5 +57,8 @@ module DCAS
     def each_response_in(filename_or_content)
       raise ArgumentError, "must include a block!" unless block_given?
     end
+
   end
 end
+
+require 'dcas/payment'

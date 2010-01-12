@@ -9,8 +9,17 @@
 === First you must set up the login info and a cache location
   angola = DCAS::Client.new(:username => 'angola', :password => '4ng014', :cache_location => './EFT')
 
+=== Create a Payment Batch
+  ach_payments = angola.new_batch(batch_id)
+  cc_payments  = angola.new_batch(batch_id)
+
+=== Populate it with payments
+  ach_payments << DCAS::AchPayment.new(client_id, client_name, amount, account_type, routing_number, account_number, check_number)
+  cc_payments  << DCAS::CreditCardPayment.new(client_id, client_name, amount, card_type, credit_card_number, expiration)
+
 === You can generate a payments file from a collection of DCAS::Payment objects
-  File.open(filename, 'w') {|f| f << DCAS.generate!(data) }
+  File.open(filename,     'w') {|f| f << cc_payments.to_csv }
+  File.open(ach_filename, 'w') {|f| f << ach_payments.to_csv }
 
 === Upload any file to the payments folder of a DCAS bucket
   angola.submit_file!(filename)
