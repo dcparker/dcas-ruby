@@ -16,11 +16,13 @@ describe "Dcas - Comprehensive failure frequency test" do
       # Depends: Fixture load of a list of DCAS logins to test
       # Depends: Fixed test files
       Fixtures[:Clients].each do |client|
-        client.submit_files!(Fixtures[:PaymentFiles])
+        client.submit_files!(Fixtures[:PaymentFiles]).should eql(Fixtures[:PaymentFiles].length)
       end
       Fixtures[:Clients].each do |client|
         client.download_response_files!
       end
     }.should_not raise_error
   end
+
+  # I can't fake it failing without too much extra work, so I'm just testing successes for now.
 end

@@ -13,6 +13,6 @@ Fixtures = {
   :TestPayments => {
     :Ach => YAML.load_file('spec/fixtures/ach_payments.yml'),
     :CreditCard => YAML.load_file('spec/fixtures/credit_card_payments.yml')
-  }
+  },
   :PaymentFiles => Dir.glob("spec/fixtures/*.csv")
 }
