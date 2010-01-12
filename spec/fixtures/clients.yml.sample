@@ -1,0 +1,9 @@
+---
+-
+  :username: testclient
+  :password: test
+  :cache_location: ./EFT
+-
+  :username: testclient2
+  :password: test
+  :cache_location: ./EFT
