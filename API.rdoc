@@ -10,7 +10,7 @@
   angola = DCAS::Client.new(:username => 'angola', :password => '4ng014', :cache_location => './EFT')
 
 === You can generate a payments file from a collection of DCAS::Payment objects
-  DCAS.generate!(filename, data)
+  File.open(filename, 'w') {|f| f << DCAS.generate!(data) }
 
 === Upload any file to the payments folder of a DCAS bucket
   angola.submit_file!(filename)
