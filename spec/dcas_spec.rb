@@ -2,6 +2,14 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "Dcas - Comprehensive failure frequency test" do
   it "should be able to complete an entire mock procedure without failing" do
+    clients = [] # fixture load of a list of DCAS logins to test
+    files = [] # fixed test files
+    clients.each do |client|
+      client.submit_files!(files)
+    end
+    clients.each do |client|
+      client.download_response_files!
+    end
     # 1) For each location yet to be uploaded:
     #   1) Gather all clients-to-bill for this location.
     #   2) For each file type (ach, cc) yet to be uploaded:
@@ -11,7 +19,5 @@ describe "Dcas - Comprehensive failure frequency test" do
     #     4) Delete the same filename from the 'uploading' folder if one exists.
     #     5) Upload the file into the 'uploading' folder.
     #     6) If we're still connected, check the file size of the file, then move it out of 'uploading' and mark file as completed.
-    # 2) Respond with all results as JSON
-    
   end
 end
