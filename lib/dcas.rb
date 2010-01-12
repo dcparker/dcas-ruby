@@ -26,12 +26,21 @@ module DCAS
 
     attr_reader :cache_location
 
-    # Submits a file to the DCAS outgoing payments bucket.
+    # Submits a single file to the DCAS outgoing payments bucket.
     def submit_file!(filename)
+      submit_files!([filename])
     end
 
     # Submits several files to the DCAS outgoing payments bucket.
     def submit_files!(filenames)
+      # 1) Gather all clients-to-bill for this location.
+      # 2) For each file type (ach, cc) yet to be uploaded:
+      #   1) Create the file locally.
+      #   2) Log in to FTPS.
+      #   3) Create the 'uploading' folder if it's not already there.
+      #   4) Delete the same filename from the 'uploading' folder if one exists.
+      #   5) Upload the file into the 'uploading' folder.
+      #   6) If we're still connected, check the file size of the file, then move it out of 'uploading' and mark file as completed.
     end
 
     # Checks for response files in the DCAS incoming responses bucket.
