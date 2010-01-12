@@ -1,6 +1,7 @@
 = dcas-ruby
 
-Description goes here.
+Ruby codebase for creating payment batch files for DCAS, uploading them, and receiving response files from DCAS.
+For the Ruby API, see API.
 
 == Note on Patches/Pull Requests
  
