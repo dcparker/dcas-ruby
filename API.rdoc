@@ -28,5 +28,5 @@
   responses = DCAS.parse_response_file(response_file_content)
 
 === Run the block for each DCAS::Response in the response file/content
-  DCAS.each_response_in(response_filename) { ... }
-  DCAS.each_response_in(response_file_content) { ... }
+  angola.each_response_in(response_filename) { |response| ... }
+  angola.each_response_in(response_file_content) { |response| ... }
