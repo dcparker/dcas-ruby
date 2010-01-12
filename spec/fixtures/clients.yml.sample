@@ -1,9 +1,12 @@
 ---
 -
-  :username: testclient
+  :username: keep_this_testclient
   :password: test
+  :company_alias: tester
+  :company_username: tester1
+  :company_password: fakeness1
   :cache_location: ./EFT
 -
-  :username: testclient2
-  :password: test
+  :username: replace_this_and_add_more
+  :password: real_clients_for_real_testing
   :cache_location: ./EFT

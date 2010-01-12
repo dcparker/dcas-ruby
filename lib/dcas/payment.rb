@@ -15,7 +15,8 @@ module DCAS
 
     def <<(payment)
       raise ArgumentError, "payment should be instance of Payment" unless payment.is_a?(Payment)
-      raise ArgumentError, "payment added to a #{type} batch should be a #{type}!" if !payments.empty? && payment.class != payments.first.class
+      type = payments.first.class
+      raise ArgumentError, "payment added to a #{type} batch should be a #{type} but was #{payment.class.name}!" if !payments.empty? && !payment.is_a?(type)
       payment.batch = self
       payments << payment
     end
@@ -35,10 +36,10 @@ module DCAS
     attr_accessor :batch
 
     def initialize(client_id, client_name, amount, *args)
-      @txn_type = 'Debit'
       @client_id = client_id
       @client_name = client_name
       @amount = amount
+      @txn_type = 'Debit'
       return args
     end
   end
@@ -51,7 +52,7 @@ module DCAS
 
     def to_csv_data(options={})
       # Example from DCAS:
-          # HD,CompanyName,UserName,Password,CHECK 
+          # HD,CompanyName,UserName,Password,Check
           # CA,111000753,1031103,42676345,50.99,,Darwin Rogers,1409 N AVE,,,75090,,,,,2919,,,,,Checking,,,,,,200
           # CC,VISA,4118000000981234,04/2009,19.99,N,,162078,JACLYN ,545 Sheridan Ave,,,07203,,,,9872,,,2,3,1
       [ # This is for bank account transactions
@@ -108,7 +109,7 @@ module DCAS
         'CC',
         @card_type, # Card Type
         @credit_card_number, # Account Number
-        @expiration.nil? ? nil : (@expiration[0,2] + '/20' + @expiration[2,2]), # Expiration date (MM/YYYY)
+        @expiration, # Expiration date (MM/YYYY)
         @amount, # Amount (00.00)
         'N', # Card Present
         nil, # Card verification (if present)
