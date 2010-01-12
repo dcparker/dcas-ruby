@@ -30,6 +30,7 @@ module DCAS
     end
 
     def each_response_in(filename_or_content)
+      raise ArgumentError, "must include a block!" unless block_given?
     end
   end
 end
