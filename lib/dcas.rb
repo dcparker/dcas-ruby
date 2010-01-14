@@ -22,7 +22,7 @@ module DCAS
       @cache_location = options[:cache_location]
     end
 
-    attr_reader :company_alias, :company_username, :company_password, :cache_location
+    attr_reader :username, :password, :company_alias, :company_username, :company_password, :cache_location
 
     def new_batch(batch_id)
       DCAS::PaymentBatch.new(self, batch_id)
@@ -43,6 +43,7 @@ module DCAS
       #   4) Delete the same filename from the 'uploading' folder if one exists.
       #   5) Upload the file into the 'uploading' folder.
       #   6) If we're still connected, check the file size of the file, then move it out of 'uploading' and mark file as completed.
+      
     end
 
     # Checks for response files in the DCAS incoming responses bucket.

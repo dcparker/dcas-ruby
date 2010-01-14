@@ -49,9 +49,22 @@ class Net::FTPS::Implicit < Net::FTP
       if @sock && !@sock.closed?
         voidcmd("ABOR") rescue EOFError
         voidcmd("QUIT") rescue EOFError
-        @sock.close
+        close
       end
     }
+  end
+
+  def abort
+    voidcmd("ABOR") rescue EOFError
+  end
+
+  def quit
+    voidcmd("QUIT") rescue EOFError
+  end
+
+  def close
+    @sock.close # SSL
+    @sock.io.close # TCP
   end
 
   def retrbinary(cmd, blocksize, rest_offset = nil) # :yield: data

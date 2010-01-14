@@ -3,9 +3,12 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 describe "Dcas - Comprehensive failure frequency test" do
   before :all do
     @fake_client = DCAS::Client.new(
+      :username => 'none',
+      :password => 'none',
       :company_alias => 'tester',
       :company_username => 'tester1',
-      :company_password => 'fakeness1'
+      :company_password => 'fakeness1',
+      :cache_location => 'none'
     )
   end
 
