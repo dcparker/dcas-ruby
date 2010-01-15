@@ -10,7 +10,7 @@ describe Net::FTPS::Implicit do
   it "should login and logout 10 times in sequence without problems" do
     20.times do
       lambda {
-        ftp = Net::FTPS::Implicit.new(DCAS::BUCKET_HOST, @client1.username, @client1.password)
+        ftp = Net::FTPS::Implicit.new(DCAS::BUCKET_HOST, @client1.username, @client1.password, nil, OpenSSL::SSL::VERIFY_NONE)
         ftp.abort
         ftp.quit
         ftp.close
@@ -22,7 +22,7 @@ describe Net::FTPS::Implicit do
   it "should be able to complete a pretty comprehensive sequence in many accounts in parallel, without problems" do
     lambda {
       5.times do
-        clients = Fixtures[:Clients].collect {|c| Net::FTPS::Implicit.new(DCAS::BUCKET_HOST, c.username, c.password) }
+        clients = Fixtures[:Clients].collect {|c| Net::FTPS::Implicit.new(DCAS::BUCKET_HOST, c.username, c.password, nil, OpenSSL::SSL::VERIFY_NONE) }
         clients.each do |c|
           c.mkdir(DCAS::STAGING_BUCKET) unless c.nlst.include?(DCAS::STAGING_BUCKET)
           c.chdir(DCAS::STAGING_BUCKET)

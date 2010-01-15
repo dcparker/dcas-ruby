@@ -1,0 +1,3 @@
+= v0.1.0 2010/01/15
+
+* Initial package. FTPS operations work properly and creates payment files.

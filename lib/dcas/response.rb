@@ -17,8 +17,38 @@
 
 module DCAS
   class Response
-    include CoresExtensions
-    attr_accessor :batch_id, :account_number, :check_number, :client_id, :status, :information, :description, :ach_submitted
+    class << self
+      def responses_in(filename_or_content)
+        responses = []
+
+        if filename_or_content !~ /\n/ && File.exists?(filename_or_content)
+          filename_or_content = File.open(filename_or_content, 'rb').map {|l| l.gsub(/[\n\r]+/, "\n")}.join
+        end
+
+        CSV::Reader.parse(filecontents) do |ccrow|
+          # Could be simply '9999' -- error!
+          begin
+            next if ccrow == ['9999']
+            # Otherwise, it is in this format:
+            # CC,AccountNumber,ReturnCode,ReasonDescription,CustTraceCode
+            responses << new(ccrow)
+          rescue # Rescue errors caused by the data in the csv.
+          end
+        end
+
+        responses
+      end
+
+      # Runs the given block for each response in the given response file.
+      def each_response_in(filename_or_content)
+        raise ArgumentError, "must include a block!" unless block_given?
+        responses_in(filename_or_content).each do |response|
+          yield response
+        end
+      end
+    end
+
+    attr_accessor :account_number, :check_number, :client_id, :status, :information, :description, :ach_submitted
     def attributes
       at = {}
       instance_variables.each do |iv|
@@ -35,6 +65,7 @@ module DCAS
       end
     end
 
+    # Tells if the payment was invalid. By default it's just false, but child classes can redefine this.
     def invalid?
       false
     end
@@ -45,7 +76,8 @@ module DCAS
       '2' => 'I', # I think, we should never get this status. (Haven't yet...)
       '99' => 'E' # These are always server errors
     }
-    def initialize(batch_id,attrs={})
+
+    def initialize(attrs={})
       new_attrs = {}
       nattrs = attrs.dup
       if nattrs.is_a?(Hash) # Is xml-hash
@@ -67,26 +99,25 @@ module DCAS
         new_attrs[:information] = "MUST CALL FOR Credit Card payment authorization! If you have any questions ask your Manager or the tech guy." if nattrs[2].to_s == 'I'
       end
       self.attributes = new_attrs
-      self.batch_id = batch_id
     end
   
-    def transaction
-      @transaction ||= GotoTransaction.find_by_batch_id_and_client_id(self.batch_id, client_id)
-    end
+    # def transaction
+    #   @transaction ||= GotoTransaction.find_by_batch_id_and_client_id(self.batch_id, client_id)
+    # end
 
-    def record_to_transaction!
-      return unless transaction.status != status && transaction.description != description
-      if transaction.transaction_id.to_i != 0 && transaction.status == 'G' && status == 'D'
-        # Was accepted, now declined.
-        # Delete the transaction if it was previously created.
-        puts "Previously accepted, now declined: delete transaction on master, remove association on goto_transaction"
-        # Helios::Transact.update_on_master(self.transaction.transaction_id, :CType => 1, :client_no => self.transaction_id)
-        transaction.transaction_id = 0
-      end
-      transaction.description = description
-      transaction.status = status
-      transaction.ach_submitted = ach_submitted if ach_submitted
-      transaction.save
-    end
+    # def record_to_transaction!
+    #   return unless transaction.status != status && transaction.description != description
+    #   if transaction.transaction_id.to_i != 0 && transaction.status == 'G' && status == 'D'
+    #     # Was accepted, now declined.
+    #     # Delete the transaction if it was previously created.
+    #     puts "Previously accepted, now declined: delete transaction on master, remove association on goto_transaction"
+    #     # Helios::Transact.update_on_master(self.transaction.transaction_id, :CType => 1, :client_no => self.transaction_id)
+    #     transaction.transaction_id = 0
+    #   end
+    #   transaction.description = description
+    #   transaction.status = status
+    #   transaction.ach_submitted = ach_submitted if ach_submitted
+    #   transaction.save
+    # end
   end
 end

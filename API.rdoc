@@ -21,9 +21,11 @@
   File.open(filename,     'w') {|f| f << cc_payments.to_csv }
   File.open(ach_filename, 'w') {|f| f << ach_payments.to_csv }
 
-=== Upload any file to the payments folder of a DCAS bucket
-  angola.submit_file!(filename)
-  angola.submit_files!(filenames)
+=== Upload a generated file to the payments folder of a DCAS bucket
+  angola.submit_payments_file!(filename)
+
+=== Simpler method, just submit batches in one go
+  angola.submit_batches!
 
 === Check for response file availability and return the available filenames
   response_filenames = angola.available_response_files

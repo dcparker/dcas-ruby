@@ -2,6 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe "Dcas - Comprehensive failure frequency test" do
   before :all do
+    DCAS::TESTING = true
     @fake_client = DCAS::Client.new(
       :username => 'none',
       :password => 'none',
@@ -31,7 +32,13 @@ describe "Dcas - Comprehensive failure frequency test" do
       # Depends: Fixture load of a list of DCAS logins to test
       # Depends: Fixed test files
       Fixtures[:Clients].each do |client|
-        client.submit_files!(Fixtures[:PaymentFiles]).should eql(Fixtures[:PaymentFiles].length)
+        cc_batch = client.new_batch(1)
+        Fixtures[:TestPayments][:CreditCard].each {|p| cc_batch << DCAS::CreditCardPayment.new(*p) }
+
+        ach_batch = client.new_batch(1)
+        Fixtures[:TestPayments][:Ach].each {|p| ach_batch << DCAS::AchPayment.new(*p) }
+
+        client.submit_batches!.should eql(Fixtures[:PaymentFiles].length)
       end
       Fixtures[:Clients].each do |client|
         client.download_response_files!
