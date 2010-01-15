@@ -9,7 +9,7 @@ begin
     gem.description = %Q{Ruby codebase for creating payment batch files for DCAS, uploading them, and receiving response files from DCAS.}
     gem.email = "gems@behindlogic.com"
     gem.homepage = "http://github.com/dcparker/dcas-ruby"
-    gem.authors = ["Daniel Parker"]
+    gem.authors = ["BehindLogic"]
     gem.add_development_dependency "rspec", ">= 1.2.9"
     gem.add_dependency "fastercsv"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings

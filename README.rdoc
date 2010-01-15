@@ -15,4 +15,4 @@ For the Ruby API, see API.
 
 == Copyright
 
-Copyright (c) 2010 Daniel Parker. See LICENSE for details.
+Copyright (c) 2010 BehindLogic. See LICENSE for details.
