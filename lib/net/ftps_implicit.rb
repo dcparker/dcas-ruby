@@ -1,3 +1,12 @@
+
+# Submitted to ruby-lang.org: http://redmine.ruby-lang.org/issues/show/1371
+# Needs Documentation!
+# quote: "I prefer an approach to modify Net::FTP itself to support implicit
+#         (and explicit) FTPS. Please see Net::IMAP in Ruby 1.9."
+# - so I probably should go and edit the net/ftp file to include some of the
+#   features of FTPS, when TLS is desired over the FTP connection.
+
+
 require 'socket'
 require 'openssl'
 require 'net/ftp'
@@ -8,13 +17,14 @@ end
 class Net::FTPS::Implicit < Net::FTP
   FTP_PORT = 990
 
-  def initialize(host=nil, user=nil, passwd=nil, acct=nil)
-    super
+  def initialize(host=nil, user=nil, passwd=nil, acct=nil, verify_mode=OpenSSL::SSL::VERIFY_PEER)
+    super(host, user, passwd, acct)
     @passive = true
     @binary = false
-    @debug_mode = true
+    @debug_mode = false
     @data_protection = 'P'
     @data_protected = false
+    @verify_mode = verify_mode
   end
   attr_accessor :data_protection
 
@@ -27,7 +37,7 @@ class Net::FTPS::Implicit < Net::FTP
     end
     if !data_socket || @data_protection == 'P'
       ssl_context = OpenSSL::SSL::SSLContext.new('SSLv23')
-      ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      ssl_context.verify_mode = @verify_mode
       ssl_context.key = nil
       ssl_context.cert = nil
       ssl_context.timeout = 10
