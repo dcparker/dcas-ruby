@@ -6,6 +6,7 @@ module DCAS
   OUTGOING_BUCKET = 'outgoing'
   INCOMING_BUCKET = 'incoming'
   STAGING_BUCKET  = 'staging'
+  DEFAULT_CACHE_LOCATION = 'EFT'
 
   class << self
     # Parses the responses from a response file and returns an array of DCAS::Response objects.
@@ -16,16 +17,17 @@ module DCAS
   class Client
     # Instantiate a new Client object which can do authenticated actions in a DCAS FTPS bucket.
     def initialize(options={})
-      raise ArgumentError, "must include :username, :password, :company_alias, :company_username, :company_password, and :cache_location" if [:username, :password, :company_alias, :company_username, :company_password, :cache_location].any? {|k| !options.has_key?(k)}
-      @username = options[:username]
-      @password = options[:password]
-      @company_alias = options[:company_alias]
-      @company_username = options[:company_username]
-      @company_password = options[:company_password]
-      @cache_location = options[:cache_location]
+      raise ArgumentError, "must include :username, :password, :company_alias, :company_username, and :company_password" if [:username, :password, :company_alias, :company_username, :company_password].any? {|k| options[k].to_s.length == 0}
+      @username = options[:username].to_s
+      @password = options[:password].to_s
+      @company_alias = options[:company_alias].to_s
+      @company_username = options[:company_username].to_s
+      @company_password = options[:company_password].to_s
+      @cache_location = options[:cache_location].to_s || DEFAULT_CACHE_LOCATION
     end
 
-    attr_reader :username, :password, :company_alias, :company_username, :company_password, :cache_location
+    attr_reader :username, :password, :company_alias, :company_username, :company_password
+    attr_accessor :cache_location
 
     # :nodoc:
     def batches
@@ -39,40 +41,75 @@ module DCAS
     end
 
     # Uploads a single payments file to the DCAS outgoing payments bucket.
-    def submit_payments_file!(filename)
+    # You can optionally supply a 'lock' object, which must respond to:
+    #   #submit_locked?(filename)
+    #   #submit_lock!(filename)
+    #   #submit_finished!(filename)
+    #   #submit_failed!(filename)
+    # If a lock_object is supplied, the method will mark it as failed and return false instead of raising an error, in case of failure.
+    def submit_payments_file!(filename, lock_object=nil)
       shortname = filename.gsub(/.*[\\\/][^\\\/]+$/,'')
-      with_ftp do |ftp|
-        # 1) Create the STAGING folder if it's not already there.
-        ftp.mkdir(DCAS::STAGING_BUCKET) unless ftp.nlst.include?(DCAS::STAGING_BUCKET)
-        ftp.chdir(DCAS::STAGING_BUCKET)
-        # 2) Delete the same filename from the STAGING folder if one exists.
-        ftp.delete(shortname) if ftp.nlst.include?(shortname)
-        # 3) Upload the file into the STAGING folder.
-        ftp.put(filename, shortname)
-        # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
-        if ftp.nlst.include?(shortname) && ftp.size(shortname) == File.size(filename)
-          ftp.rename(shortname, "../#{DCAS::OUTGOING_BUCKET}/#{shortname}") unless DCAS::TESTING
-        else
-          raise RuntimeError, "FAILED uploading `#{filename}' - incomplete or unsuccessful upload. Please try again."
+      if lock_object && lock_object.submit_locked?(shortname)
+        raise RuntimeError, "Submit for #{shortname} is locked!"
+      else
+        lock_object.submit_lock!(shortname) if lock_object
+        with_ftp do |ftp|
+          # 1) Create the STAGING folder if it's not already there.
+          ftp.mkdir(DCAS::STAGING_BUCKET) unless ftp.nlst.include?(DCAS::STAGING_BUCKET)
+          ftp.chdir(DCAS::STAGING_BUCKET)
+          # 2) Delete the same filename from the STAGING folder if one exists.
+          ftp.delete(shortname) if ftp.nlst.include?(shortname)
+          # 3) Upload the file into the STAGING folder.
+          ftp.put(filename, shortname)
+          # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
+          if ftp.nlst.include?(shortname) && ftp.size(shortname) == File.size(filename)
+            ftp.rename(shortname, "../#{DCAS::OUTGOING_BUCKET}/#{shortname}") unless DCAS::TESTING
+            lock_object.submit_finished!(shortname) if lock_object
+          else
+            if lock_object
+              lock_object.submit_failed!(shortname)
+              return false
+            else
+              raise RuntimeError, "FAILED uploading `#{filename}' - incomplete or unsuccessful upload. Please try again."
+            end
+          end
         end
       end
       true
     end
 
+    # Writes one batch to file and submits it to the DCAS outgoing payments bucket.
+    # You can optionally supply a 'lock' object, which must respond to:
+    #   #submit_locked?
+    #   #submit_lock!(filename)
+    #   #submit_finished!(filename)
+    #   #submit_failed!(filename)
+    # If a lock_object is supplied, the method will mark it as failed and return false instead of raising an error, in case of failure.
+    def submit_batch!(batch, lock_object=nil)
+      File.makedirs(cache_location)
+      filename = cache_location + "/" + batch.filename
+      # 1) Create the file locally.
+      File.open(filename) {|f| f << batch.to_csv }
+      # 2) Upload it to the DCAS outgoing payments bucket.
+      submit_payments_file!(filename, lock_object)
+    end
+
     # Writes all batches to file and submits them to the DCAS outgoing payments bucket.
-    def submit_batches!
+    # You can optionally supply a 'lock' object, which must respond to:
+    #   #submit_locked?
+    #   #submit_lock!(filename)
+    #   #submit_finished!(filename)
+    #   #submit_failed!(filename)
+    def submit_batches!(lock_object=nil)
       File.makedirs(cache_location)
       batches_submitted = 0
-      with_ftp do
+      with_ftp do # causes all batches to be uploaded in a single session
         # 1) Gather all payments for this client.
         batches.each do |batch| # 2) For each file type (ach, cc) yet to be uploaded:
-          filename = cache_location + "/#{company_user}_#{batch.type}_#{Time.now.strftime("%Y%m%d")}.csv"
-          # 1) Create the file locally.
-          File.open(filename) {|f| f << batch.to_csv }
-          # 2) Upload it to the DCAS outgoing payments bucket.
-          batches_submitted += 1 if submit_payments_file!(filename)
+          batches_submitted += 1 if submit_batch!(batch, lock_object)
         end
       end
+      batches_submitted
     end
 
     # Checks for response files in the DCAS incoming responses bucket.

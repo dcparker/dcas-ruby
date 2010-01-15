@@ -25,6 +25,10 @@ module DCAS
       payments.first.class.name.gsub(/.*::/,'').downcase
     end
 
+    def filename
+      "#{@client.company_user}_#{type}.csv"
+    end
+
     # Generates a payment batch file and returns its contents.
     def to_csv
       FasterCSV.generate do |csv|
