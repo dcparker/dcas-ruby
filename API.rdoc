@@ -7,7 +7,14 @@
 * Parse response files
 
 === First you must set up the login info and a cache location
-  angola = DCAS::Client.new(:username => 'angola', :password => '4ng014', :cache_location => './EFT')
+  angola =  DCAS::Client.new(
+              :username => 'angola',
+              :password => '4ng014',
+              :company_alias => 'angolaHQ',
+              :company_username => 'angolatw',
+              :company_password => 'secret',
+              :cache_location => './PaymentFileStore'
+            )
 
 === Create a Payment Batch
   ach_payments = angola.new_batch(batch_id)
