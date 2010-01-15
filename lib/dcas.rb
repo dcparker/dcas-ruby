@@ -3,7 +3,7 @@ require 'ftools'
 module DCAS
   TESTING = false
   BUCKET_HOST = 'ftp.ezpaycenters.net'
-  OUTGOING_BUCKET = 'outgoing'
+  DEFAULT_OUTGOING_BUCKET = 'outgoing'
   INCOMING_BUCKET = 'incoming'
   STAGING_BUCKET  = 'staging'
   DEFAULT_CACHE_LOCATION = 'EFT'
@@ -24,10 +24,12 @@ module DCAS
       @company_username = options[:company_username].to_s
       @company_password = options[:company_password].to_s
       @cache_location = options[:cache_location].to_s || DEFAULT_CACHE_LOCATION
+      @outgoing_bucket = DEFAULT_OUTGOING_BUCKET
+      @testing = TESTING
     end
 
     attr_reader :username, :password, :company_alias, :company_username, :company_password
-    attr_accessor :cache_location
+    attr_accessor :cache_location, :outgoing_bucket, :testing
 
     # :nodoc:
     def batches
@@ -63,7 +65,7 @@ module DCAS
           ftp.put(filename, shortname)
           # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
           if ftp.nlst.include?(shortname) && ftp.size(shortname) == File.size(filename)
-            ftp.rename(shortname, "../#{DCAS::OUTGOING_BUCKET}/#{shortname}") unless DCAS::TESTING
+            ftp.rename(shortname, "../#{outgoing_bucket}/#{shortname}") unless testing || outgoing_bucket == DCAS::STAGING_BUCKET
             lock_object.submit_finished!(shortname) if lock_object
           else
             if lock_object
