@@ -21,7 +21,7 @@ class Net::FTPS::Implicit < Net::FTP
     super(host, user, passwd, acct)
     @passive = true
     @binary = false
-    @debug_mode = false
+    @debug_mode = true
     @data_protection = 'P'
     @data_protected = false
     @verify_mode = verify_mode
