@@ -68,6 +68,7 @@ module DCAS
             ftp.put(filename, shortname)
             true
           rescue Object
+            lock_object.submit_failed!(shortname) if lock_object
             false
           end && begin
             # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
