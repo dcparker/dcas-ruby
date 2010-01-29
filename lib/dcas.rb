@@ -73,9 +73,15 @@ module DCAS
           end && begin
             # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
             if ftp.nlst.include?(shortname) && ftp.size(shortname) == File.size(filename)
-              ftp.rename(shortname, "../#{outgoing_bucket}/#{shortname}") unless testing || outgoing_bucket == DCAS::STAGING_BUCKET
-              lock_object.submit_finished!(shortname) if lock_object
-              true
+              begin
+                ftp.rename(shortname, "../#{outgoing_bucket}/#{shortname}") unless testing || outgoing_bucket == DCAS::STAGING_BUCKET
+                true
+              rescue Object
+                false
+              end && begin
+                lock_object.submit_finished!(shortname) if lock_object
+                true
+              end
             else
               if lock_object
                 lock_object.submit_failed!(shortname)
@@ -85,6 +91,7 @@ module DCAS
               end
             end
           rescue Object
+            lock_object.submit_failed!(shortname) if lock_object
             false
           end
         end
