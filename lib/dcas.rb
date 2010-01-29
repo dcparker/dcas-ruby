@@ -56,7 +56,7 @@ module DCAS
         return nil
       else
         lock_object.submit_lock!(shortname) if lock_object
-        with_ftp do |ftp|
+        res = with_ftp do |ftp|
           # 1) Create the STAGING folder if it's not already there.
           begin
             ftp.mkdir(DCAS::STAGING_BUCKET) unless ftp.nlst.include?(DCAS::STAGING_BUCKET)
@@ -88,6 +88,8 @@ module DCAS
             false
           end
         end
+        lock_object.submit_failed!(shortname) if lock_object && res.nil?
+        res
       end
     end
 
@@ -173,6 +175,7 @@ module DCAS
             yield
           end
         rescue Object
+          result = nil
         ensure
           @inside_with_ftp -= 1
           ftp_done
