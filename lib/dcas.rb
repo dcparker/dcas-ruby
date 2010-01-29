@@ -57,27 +57,35 @@ module DCAS
         lock_object.submit_lock!(shortname) if lock_object
         with_ftp do |ftp|
           # 1) Create the STAGING folder if it's not already there.
-          ftp.mkdir(DCAS::STAGING_BUCKET) unless ftp.nlst.include?(DCAS::STAGING_BUCKET)
-          ftp.chdir(DCAS::STAGING_BUCKET)
-          # 2) Delete the same filename from the STAGING folder if one exists.
-          ftp.delete(shortname) if ftp.nlst.include?(shortname)
-          # 3) Upload the file into the STAGING folder.
-          ftp.put(filename, shortname)
-          # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
-          if ftp.nlst.include?(shortname) && ftp.size(shortname) == File.size(filename)
-            ftp.rename(shortname, "../#{outgoing_bucket}/#{shortname}") unless testing || outgoing_bucket == DCAS::STAGING_BUCKET
-            lock_object.submit_finished!(shortname) if lock_object
-          else
-            if lock_object
-              lock_object.submit_failed!(shortname)
-              return false
+          begin
+            ftp.mkdir(DCAS::STAGING_BUCKET) unless ftp.nlst.include?(DCAS::STAGING_BUCKET)
+            ftp.chdir(DCAS::STAGING_BUCKET)
+            # 2) Delete the same filename from the STAGING folder if one exists.
+            ftp.delete(shortname) if ftp.nlst.include?(shortname)
+            # 3) Upload the file into the STAGING folder.
+            puts "Uploading #{filename} as #{shortname}..."
+            ftp.put(filename, shortname)
+          rescue Object
+            false
+          end && begin
+            # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
+            if ftp.nlst.include?(shortname) && ftp.size(shortname) == File.size(filename)
+              ftp.rename(shortname, "../#{outgoing_bucket}/#{shortname}") unless testing || outgoing_bucket == DCAS::STAGING_BUCKET
+              lock_object.submit_finished!(shortname) if lock_object
+              true
             else
-              raise RuntimeError, "FAILED uploading `#{filename}' - incomplete or unsuccessful upload. Please try again."
+              if lock_object
+                lock_object.submit_failed!(shortname)
+                false
+              else
+                raise RuntimeError, "FAILED uploading `#{filename}' - incomplete or unsuccessful upload. Please try again."
+              end
             end
+          rescue Object
+            false
           end
         end
       end
-      true
     end
 
     # Writes one batch to file and submits it to the DCAS outgoing payments bucket.
@@ -91,7 +99,7 @@ module DCAS
       File.makedirs(cache_location)
       filename = cache_location + "/" + batch.filename
       # 1) Create the file locally.
-      File.open(filename) {|f| f << batch.to_csv }
+      File.open(filename, 'w') {|f| f << batch.to_csv }
       # 2) Upload it to the DCAS outgoing payments bucket.
       submit_payments_file!(filename, lock_object)
     end
@@ -154,13 +162,19 @@ module DCAS
       # This allows all functionality to share the same connection, then log out after all work is finished.
       def with_ftp(&block)
         @inside_with_ftp = @inside_with_ftp.to_i + 1
-        if block.arity == 1
-          yield ftp_connection
-        else
-          yield
+        result = false
+        begin
+          result = if block.arity == 1
+            yield ftp_connection
+          else
+            yield
+          end
+        rescue Object
+        ensure
+          @inside_with_ftp -= 1
+          ftp_done
         end
-        @inside_with_ftp -= 1
-        ftp_done
+        result
       end
       def ftp_done
         close_ftp if @inside_with_ftp.to_i == 0

@@ -26,7 +26,7 @@ module DCAS
     end
 
     def filename
-      "#{@client.company_user}_#{type}.csv"
+      "#{@client.company_username}_#{type}.csv"
     end
 
     # Generates a payment batch file and returns its contents.
