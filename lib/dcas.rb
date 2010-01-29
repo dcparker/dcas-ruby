@@ -66,6 +66,7 @@ module DCAS
             # 3) Upload the file into the STAGING folder.
             puts "Uploading #{filename} as #{shortname}..."
             ftp.put(filename, shortname)
+            true
           rescue Object
             false
           end && begin
