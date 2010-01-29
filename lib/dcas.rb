@@ -50,9 +50,10 @@ module DCAS
     #   #submit_failed!(filename)
     # If a lock_object is supplied, the method will mark it as failed and return false instead of raising an error, in case of failure.
     def submit_payments_file!(filename, lock_object=nil)
-      shortname = filename.gsub(/[\\\/][^\\\/]+$/,'')
+      shortname = filename.match(/[\\\/]([^\\\/]+)$/)[1]
       if lock_object && lock_object.submit_locked?(shortname)
-        raise RuntimeError, "Submit for #{shortname} is locked!"
+        # raise RuntimeError, "Submit for #{shortname} is locked!"
+        return nil
       else
         lock_object.submit_lock!(shortname) if lock_object
         with_ftp do |ftp|
