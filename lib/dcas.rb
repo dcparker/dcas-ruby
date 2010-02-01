@@ -3,8 +3,8 @@ require 'ftools'
 module DCAS
   TESTING = false
   BUCKET_HOST = 'ftp.ezpaycenters.net'
-  DEFAULT_OUTGOING_BUCKET = 'outgoing'
-  INCOMING_BUCKET = 'incoming'
+  DEFAULT_OUTGOING_BUCKET = 'outgoing' # The return files coming back to us.
+  DEFAULT_INCOMING_BUCKET = 'incoming' # The payment files we're sending TO dcas.
   STAGING_BUCKET  = 'staging'
   DEFAULT_CACHE_LOCATION = 'EFT'
 
@@ -24,12 +24,12 @@ module DCAS
       @company_username = options[:company_username].to_s
       @company_password = options[:company_password].to_s
       @cache_location = options[:cache_location].to_s || DEFAULT_CACHE_LOCATION
-      @outgoing_bucket = DEFAULT_OUTGOING_BUCKET
+      @incoming_bucket = DEFAULT_INCOMING_BUCKET
       @testing = TESTING
     end
 
     attr_reader :username, :password, :company_alias, :company_username, :company_password
-    attr_accessor :cache_location, :outgoing_bucket, :testing
+    attr_accessor :cache_location, :incoming_bucket, :testing
 
     # :nodoc:
     def batches
@@ -42,7 +42,7 @@ module DCAS
       batches.last
     end
 
-    # Uploads a single payments file to the DCAS outgoing payments bucket.
+    # Uploads a single payments file to the DCAS incoming payments bucket.
     # You can optionally supply a 'lock' object, which must respond to:
     #   #submit_locked?(filename)
     #   #submit_lock!(filename)
@@ -74,7 +74,7 @@ module DCAS
             # 4) If we're still connected, check the file size of the file, then move it out of STAGING and mark file as completed.
             if ftp.nlst.include?(shortname) && ftp.size(shortname) == File.size(filename)
               begin
-                ftp.rename(shortname, "../#{outgoing_bucket}/#{shortname}") unless testing || outgoing_bucket == DCAS::STAGING_BUCKET
+                ftp.rename(shortname, "../#{incoming_bucket}/#{shortname}") unless testing || incoming_bucket == DCAS::STAGING_BUCKET
                 true
               rescue Object
                 false
@@ -100,7 +100,7 @@ module DCAS
       end
     end
 
-    # Writes one batch to file and submits it to the DCAS outgoing payments bucket.
+    # Writes one batch to file and submits it to the DCAS incoming payments bucket.
     # You can optionally supply a 'lock' object, which must respond to:
     #   #submit_locked?
     #   #submit_lock!(filename)
@@ -112,11 +112,11 @@ module DCAS
       filename = cache_location + "/" + batch.filename
       # 1) Create the file locally.
       File.open(filename, 'w') {|f| f << batch.to_csv }
-      # 2) Upload it to the DCAS outgoing payments bucket.
+      # 2) Upload it to the DCAS incoming payments bucket.
       submit_payments_file!(filename, lock_object)
     end
 
-    # Writes all batches to file and submits them to the DCAS outgoing payments bucket.
+    # Writes all batches to file and submits them to the DCAS incoming payments bucket.
     # You can optionally supply a 'lock' object, which must respond to:
     #   #submit_locked?
     #   #submit_lock!(filename)
@@ -137,9 +137,9 @@ module DCAS
     # Checks for response files in the DCAS incoming responses bucket.
     def available_response_files
       with_ftp do |ftp|
-        # 3) List the *.csv files in the INCOMING bucket.
-        result = if ftp.nlst.include?(DCAS::INCOMING_BUCKET)
-          ftp.chdir(DCAS::INCOMING_BUCKET)
+        # 3) List the *.csv files in the OUTGOING bucket.
+        result = if ftp.nlst.include?(DCAS::DEFAULT_OUTGOING_BUCKET)
+          ftp.chdir(DCAS::DEFAULT_OUTGOING_BUCKET)
           ftp.nlst.select {|f| f =~ /\.csv$/}
         else
           []
