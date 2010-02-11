@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{dcas-ruby}
-  s.version = "0.3.9"
+  s.version = "0.4.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["BehindLogic"]
-  s.date = %q{2010-02-01}
+  s.date = %q{2010-02-10}
   s.description = %q{Ruby codebase for creating payment batch files for DCAS, uploading them, and receiving response files from DCAS.}
   s.email = %q{gems@behindlogic.com}
   s.extra_rdoc_files = [
