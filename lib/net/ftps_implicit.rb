@@ -28,6 +28,19 @@ class Net::FTPS::Implicit < Net::FTP
   end
   attr_accessor :data_protection
 
+  def self.open(host, user=nil, passwd=nil, acct=nil, verify_mode=OpenSSL::SSL::VERIFY_PEER)
+    if block_given?
+      ftps = new(host, user, passwd, acct, verify_mode)
+      begin
+        yield ftps
+      ensure
+        ftps.close
+      end
+    else
+      new(host, user, passwd, acct, verify_mode)
+    end
+  end
+
   def open_socket(host, port, data_socket=false)
     tcpsock = if defined? SOCKSsocket and ENV["SOCKS_SERVER"]
       @passive = true
